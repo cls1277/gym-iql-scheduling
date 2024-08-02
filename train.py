@@ -2,7 +2,6 @@
 # Author: cls1277
 # Email: cls1277@163.com
 
-# from pettingzoo.mpe import simple_adversary_v3
 import time
 import matplotlib.pyplot as plt
 from iql.iql_dqn import *
@@ -26,14 +25,13 @@ dqn_agent_dict = {
 }
 
 agent_dict = dqn_agent_dict
-episodes = 100
+episodes = 5000
 prioritized = True
 run_name = "cls_test"
 
 env = MachineEnv()
-# env = simple_adversary_v3.env(N=2, max_cycles=50)
 for agent in agent_dict.keys():
-    agent_dict[agent].prioritized_memory.beta_annealing_steps = 50*episodes
+    agent_dict[agent].prioritized_memory.beta_annealing_steps = 50 * episodes
 start = time.time()
 last_hundred_score_dict = {
     "VTM": deque(maxlen=100),

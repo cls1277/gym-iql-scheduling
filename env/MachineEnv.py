@@ -18,13 +18,13 @@ PMindex2name = {
     6: "PreAligner",
     7: "WaferBuffer"
 }
-penalty = -200000
-award = 200000
+PENALTY = -200000
+AWARD = 200000
 
 class MachineEnv(gym.Env):
     def __init__(self):
         self.state = np.concatenate([-np.ones(6), np.zeros(16), -np.ones(10), [6], np.zeros(state_length - 33)]).astype(int)
-        self.reward = 1
+        self.reward = 0
         self.done = False
         self.info = {}
         Config.load_config()
@@ -32,14 +32,17 @@ class MachineEnv(gym.Env):
 
     def reset(self):
         self.state = np.concatenate([-np.ones(6), np.zeros(16), -np.ones(10), [6], np.zeros(state_length - 33)]).astype(int)
-        self.reward = 1
+        self.reward = 0
         self.done = False
         self.info = {}
 
 
     # 通过腔室的编号得到需要使用的片子的下标
     def _get_Wafer_index(self, PM_index):
-        return np.where(self.state[0:6] == PM_index)
+        Wafer_indexs = np.where(self.state[0:6] == PM_index)[0]
+        if Wafer_indexs.size != 1:
+            return -1
+        return Wafer_indexs[0]
 
     def _get_Wafer_location(self, Wafer_index):
         return self.state[Wafer_index]
@@ -112,7 +115,6 @@ class MachineEnv(gym.Env):
     # 更新每个腔室的状态
     def _update_status_0(self):
         for PM_index in range(7):
-            # TODO: 这样写状态转移还会有<提前做Prepare>这种策略吗?
             # 剩余时间是 0 ,说明这个腔室要进入下一个状态了
             if self._get_remain_time(PM_index) != 0:
                 continue
@@ -133,6 +135,9 @@ class MachineEnv(gym.Env):
                             # 把 Alignment 上加工完的 Wafer 的状态设为 <Align后>
                             # self._set_Wafer_status(self._get_Wafer_index(PM_index), 5)
                             Wafer_index = self._get_Wafer_index(PM_index)
+                            if Wafer_index == -1:
+                                self.reward = PENALTY
+                                return
                             self._set_Wafer_status(Wafer_index, self._get_Wafer_status(Wafer_index) + 1)
                 # Plasma1, Plasma2, Clean1, Clean2, AVM
                 elif 1 <= PM_index <= 5:
@@ -153,12 +158,18 @@ class MachineEnv(gym.Env):
                             # }
                             # self._set_Wafer_status(self._get_Wafer_index(PM_index), PMindex2status[PM_index])
                             Wafer_index = self._get_Wafer_index(PM_index)
+                            if Wafer_index == -1:
+                                self.reward = PENALTY
+                                return
                             self._set_Wafer_status(Wafer_index, self._get_Wafer_status(Wafer_index) + 1)
                 else:
                     if PM_status == 1:
                         self._set_PM_status(PM_index, -1)
                         self._set_PM_remain(PM_index, -1)
                         Wafer_index = self._get_Wafer_index(PM_index)
+                        if Wafer_index == -1:
+                            self.reward = PENALTY
+                            return
                         self._set_Wafer_status(Wafer_index, self._get_Wafer_status(Wafer_index) + 1)
             else:
                 print("Error: wrong PM_status: " + str(PM_index) + " " + str(self._get_PM_status(PM_index)))
@@ -166,10 +177,15 @@ class MachineEnv(gym.Env):
     def _update_status_VTM_1234(self, do_type, hand):
         self._set_VTM_hands(hand)
         self._after_waiting(self._get_VTM_facing())
+        Wafer_index = self._get_Wafer_index(self._get_VTM_facing())
+        if Wafer_index == -1:
+            self.reward = PENALTY
+            return
         if do_type == "pick":
-            self._set_Wafer_location(self._get_Wafer_index(self._get_VTM_facing()), 8 + hand)
+            self._set_Wafer_location(Wafer_index, 8 + hand)
         elif do_type == "place":
-            self._set_Wafer_location(self._get_Wafer_index(self._get_VTM_facing()), self._get_VTM_facing())
+
+            self._set_Wafer_location(Wafer_index, self._get_VTM_facing())
         else:
             print("Error: do_type is not pick or place")
 
@@ -182,7 +198,7 @@ class MachineEnv(gym.Env):
                 remain_times = self._get_remain_times()
                 remain_times_normal = remain_times[remain_times != -1]
                 if len(remain_times_normal) == 0:
-                    self.reward = penalty
+                    self.reward = PENALTY
                     return
                 min_remain_time = np.min(remain_times_normal)
                 delta_time = random.randint(min_remain_time // 2, min_remain_time)
@@ -194,38 +210,38 @@ class MachineEnv(gym.Env):
                     self._update_status_VTM_1234("pick", 1)
                     self.reward = 0
                 else:
-                    self.reward = penalty
+                    self.reward = PENALTY
             elif action == 2:
                 if self._check_facing_place() and self._get_VTM_hands()[1] == 1:
                     self._update_status_VTM_1234("place", 1)
                     self.reward = 0
                 else:
-                    self.reward = penalty
+                    self.reward = PENALTY
             elif action == 3:
                 if self._check_facing_pick() and self._get_VTM_hands()[0] == 0:
                     self._update_status_VTM_1234("pick", 0)
                     self.reward = 0
                 else:
-                    self.reward = penalty
+                    self.reward = PENALTY
             elif action == 4:
                 if self._check_facing_place() and self._get_VTM_hands()[0] == 1:
                     self._update_status_VTM_1234("place", 0)
                     self.reward = 0
                 else:
-                    self.reward = penalty
+                    self.reward = PENALTY
             elif 5 <= action <= 12:
+                # action - 5 是VTM要面对的PM的下标
+                self.reward = -Config.get_value(PMindex2name[self._get_VTM_facing()] + "." + "distance")[action - 5]
                 self._set_VTM_facing(action - 5)
-                self.reward = 0
             else:
                 print("Error: invalid action")
-
 
         elif agent_index == 1:
             if action == 0:
                 remain_times = self._get_remain_times()
                 remain_times_normal = remain_times[remain_times != -1]
                 if len(remain_times_normal) == 0:
-                    self.reward = penalty
+                    self.reward = PENALTY
                     return
                 min_remain_time = np.min(remain_times_normal)
                 delta_time = random.randint(min_remain_time // 2, min_remain_time)
@@ -234,9 +250,9 @@ class MachineEnv(gym.Env):
                 self.reward = -delta_time
 
             elif action == 1:
-                Wafer_indexs = np.where(self.state[0:6] == -1)
+                Wafer_indexs = np.where(self.state[0:6] == -1)[0]
                 if len(Wafer_indexs) == 0:
-                    self.reward = penalty
+                    self.reward = PENALTY
                     return
                 Wafer_index = Wafer_indexs[0]
                 self._set_Wafer_location(Wafer_index, 6)
@@ -246,7 +262,7 @@ class MachineEnv(gym.Env):
 
             elif action == 2:
                 if self._get_buffer_count() > 4:
-                    self.reward = penalty
+                    self.reward = PENALTY
                     return
                 Wafer_index = self._get_Wafer_index(6)
                 self._set_Wafer_location(Wafer_index, 7)
@@ -255,15 +271,15 @@ class MachineEnv(gym.Env):
                 self.reward = 0
 
             elif action == 3:
-                Wafer_index = self._get_Wafer_index(6)[0]
-                if Wafer_index == [] or self._get_Wafer_status(Wafer_index) != 6:
-                    self.reward = penalty
+                Wafer_index = self._get_Wafer_index(6)
+                if Wafer_index == -1 or self._get_Wafer_status(Wafer_index) != 6:
+                    self.reward = PENALTY
                     return
                 # 做完了
                 self._set_Wafer_location(Wafer_index, -1)
                 self._set_Wafer_status(Wafer_index, 0)
 
-                self.reward = award
+                self.reward = AWARD
                 self.jobs -= 1
                 if self.jobs == 0:
                     self.done = True
@@ -275,4 +291,4 @@ class MachineEnv(gym.Env):
         return self.state, self.reward, self.done, self.info
 
     def agent_iter(self):
-        return ['VTM', 'ATM']
+        return ['ATM', 'VTM']

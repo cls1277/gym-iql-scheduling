@@ -3,31 +3,41 @@
     "PM_names": ["Alignment", "Plasma1", "Plasma2", "Clean1", "Clean2", "AVM", "PreAligner", "WaferBuffer"],
     "Alignment": {
       "status": ["Idle", "PreparePlaceSlot1", "PlaceSlot1", "VerifyPlaceSlot1", "PreparePlaceSlot2", "PlaceSlot2", "VerifyPlaceSlot2", "Process", "PreparePick", "Pick", "VerifyPick"],
-      "duration": [-1, 19000, 0, 15000, 6000, 0, 30000, 180000, 4000, 0, 10000]
+      "duration": [-1, 19000, 0, 15000, 6000, 0, 30000, 180000, 4000, 0, 10000],
+      "distance": [0, 500, 1500, 500, 1500, 2500, 2500, 2500]
     },
     "Plasma1": {
       "status": ["Idle", "PreparePlace", "Place", "VerifyPlace", "Process", "PreparePick", "Pick", "VerifyPick"],
-      "duration": [-1, 23000, 0, 100, 105000, 5000, 0, 10000]
+      "duration": [-1, 23000, 0, 100, 105000, 5000, 0, 10000],
+      "distance": [500, 0, 1000, 500, 1500, 2000, 2500, 2500]
     },
     "Plasma2": {
       "status": ["Idle", "PreparePlace", "Place", "VerifyPlace", "Process", "PreparePick", "Pick", "VerifyPick"],
-      "duration": [-1, 10, 0, 10, 105000, 10, 0, 20000]
+      "duration": [-1, 10, 0, 10, 105000, 10, 0, 20000],
+      "distance": [1500, 1000, 0, 1500, 500, 1000, 1500, 1500]
     },
     "Clean1": {
       "status": ["Idle", "PreparePlace", "Place", "VerifyPlace", "Process", "PreparePick", "Pick", "VerifyPick"],
-      "duration": [-1, 10, 0, 10, 112000, 10, 0, 14000]
+      "duration": [-1, 10, 0, 10, 112000, 10, 0, 14000],
+      "distance": [500, 500, 1500, 0, 1000, 2500, 2500, 2500]
     },
     "Clean2": {
       "status": ["Idle", "PreparePlace", "Place", "VerifyPlace", "Process", "PreparePick", "Pick", "VerifyPick"],
-      "duration": [-1, 1000, 0, 5000, 112000, 10000, 0, 10000]
+      "duration": [-1, 1000, 0, 5000, 112000, 10000, 0, 10000],
+      "distance": [1500, 1500, 500, 1000, 0, 1500, 1500, 1500]
     },
     "AVM": {
       "status": ["Idle", "PreparePlace", "Place", "VerifyPlace", "Process", "PreparePick", "Pick", "VerifyPick"],
-      "duration": [-1, 12000, 0, 15000, 30000, 14000, 0, 3000]
+      "duration": [-1, 12000, 0, 15000, 30000, 14000, 0, 3000],
+      "distance": [2500, 2000, 1000, 2500, 1500, 0, 500, 500]
     },
     "PreAligner": {
       "status": ["Idle", "Process"],
-      "duration": [-1, 13000]
+      "duration": [-1, 13000],
+      "distance": [2500, 2500, 1500, 2500, 1500, 500, 0, 500]
+    },
+    "WaferBuffer": {
+      "distance": [2500, 2500, 1500, 2500, 1500, 500, 500, 0]
     },
     "max_wafer_number": 6,
     "job_number": 20

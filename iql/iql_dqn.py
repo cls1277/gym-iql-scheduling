@@ -17,6 +17,7 @@ class DQNAgent:
     def __init__(self, epsilon, min_epsilon, decay_rate, learning_rate, tau, gamma, batch_size,
                  q_network, target_network, max_memory_length, agent_index=None):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.device = "cpu"
         self.experience_memory = deque(maxlen=max_memory_length)
         self.prioritized_memory = PrioritizedReplayMemory(max_length=max_memory_length, alpha=0.6,
                                                           beta=0.4, beta_annealing_steps=500000)
@@ -153,12 +154,11 @@ class DQNAgent:
 
 
 class ATMAgentDQN(nn.Module):
-
     def __init__(self):
         super(ATMAgentDQN, self).__init__()
         self.fc1 = nn.Linear(36, 32)
         self.fc2 = nn.Linear(32, 64)
-        self.fc3 = nn.Linear(64, 13)
+        self.fc3 = nn.Linear(64, 4)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -168,12 +168,11 @@ class ATMAgentDQN(nn.Module):
 
 
 class VTMAgentDQN(nn.Module):
-
     def __init__(self):
         super(VTMAgentDQN, self).__init__()
         self.fc1 = nn.Linear(36, 32)
         self.fc2 = nn.Linear(32, 64)
-        self.fc3 = nn.Linear(64, 4)
+        self.fc3 = nn.Linear(64, 13)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
