@@ -42,10 +42,18 @@ class DQNAgent:
 
     def policy(self, observation, done):
         observation = torch.tensor(observation, dtype=torch.float32).to(self.device)
+        if self.agent_index == 0:
+            max_action = 12
+        elif self.agent_index == 1:
+            max_action = 3
+        else:
+            print("Error: invalid agent type")
+            return
+
         if done:
             return None
         elif random.random() <= self.epsilon:
-            action = random.randint(0, 4)
+            action = random.randint(0, max_action)
         else:
             self.q_network.eval()
             with torch.no_grad():
@@ -144,13 +152,13 @@ class DQNAgent:
             target_parameters.data.copy_(self.tau * source_parameters.data + (1.0 - self.tau) * target_parameters.data)
 
 
-class AdversaryDQN(nn.Module):
+class ATMAgentDQN(nn.Module):
 
     def __init__(self):
-        super(AdversaryDQN, self).__init__()
-        self.fc1 = nn.Linear(9, 32)
+        super(ATMAgentDQN, self).__init__()
+        self.fc1 = nn.Linear(36, 32)
         self.fc2 = nn.Linear(32, 64)
-        self.fc3 = nn.Linear(64, 5)
+        self.fc3 = nn.Linear(64, 13)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -159,13 +167,13 @@ class AdversaryDQN(nn.Module):
         return x
 
 
-class AgentDQN(nn.Module):
+class VTMAgentDQN(nn.Module):
 
     def __init__(self):
-        super(AgentDQN, self).__init__()
-        self.fc1 = nn.Linear(11, 32)
+        super(VTMAgentDQN, self).__init__()
+        self.fc1 = nn.Linear(36, 32)
         self.fc2 = nn.Linear(32, 64)
-        self.fc3 = nn.Linear(64, 5)
+        self.fc3 = nn.Linear(64, 4)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))

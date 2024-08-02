@@ -2,38 +2,27 @@
 # Author: cls1277
 # Email: cls1277@163.com
 
-from pettingzoo.mpe import simple_adversary_v3
+# from pettingzoo.mpe import simple_adversary_v3
 import time
 import matplotlib.pyplot as plt
 from iql.iql_dqn import *
 import os
+from env.MachineEnv import MachineEnv
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
-agent_0_q_net = AgentDQN()
-agent_0_target_net = AgentDQN()
-
-agent_1_q_net = AgentDQN()
-agent_1_target_net = AgentDQN()
-
-agent_0 = DQNAgent(epsilon=1.0, min_epsilon=0.1, decay_rate=0.999,
+VTM = DQNAgent(epsilon=1.0, min_epsilon=0.1, decay_rate=0.999,
                    learning_rate=0.0001, gamma=0.99, batch_size=64,
-                   tau=0.001, q_network=agent_0_q_net, target_network=agent_0_target_net,
-                   max_memory_length=100000, agent_index=1)
+                   tau=0.001, q_network=VTMAgentDQN(), target_network=VTMAgentDQN(),
+                   max_memory_length=100000, agent_index=0)
 
-agent_1 = DQNAgent(epsilon=1.0, min_epsilon=0.1, decay_rate=0.999,
-                   learning_rate=0.0001, gamma=0.99, batch_size=64,
-                   tau=0.001, q_network=agent_1_q_net, target_network=agent_1_target_net,
-                   max_memory_length=100000, agent_index=2)
-
-adversary_0 = DQNAgent(epsilon=1.0, min_epsilon=0.1, decay_rate=0.999,
+ATM = DQNAgent(epsilon=1.0, min_epsilon=0.1, decay_rate=0.999,
                        learning_rate=0.0001, gamma=0.99, batch_size=64,
-                       tau=0.001, q_network=AdversaryDQN(), target_network=AdversaryDQN(),
-                       max_memory_length=100000, agent_index=3)
+                       tau=0.001, q_network=ATMAgentDQN(), target_network=ATMAgentDQN(),
+                       max_memory_length=100000, agent_index=1)
 
 dqn_agent_dict = {
-    "agent_0": agent_0,
-    "agent_1": agent_1,
-    "adversary_0": adversary_0,
+    "VTM": VTM,
+    "ATM": ATM,
 }
 
 agent_dict = dqn_agent_dict
@@ -41,42 +30,39 @@ episodes = 100
 prioritized = True
 run_name = "cls_test"
 
-env = simple_adversary_v3.env(N=2, max_cycles=50)
+env = MachineEnv()
+# env = simple_adversary_v3.env(N=2, max_cycles=50)
 for agent in agent_dict.keys():
     agent_dict[agent].prioritized_memory.beta_annealing_steps = 50*episodes
 start = time.time()
 last_hundred_score_dict = {
-    "agent_0": deque(maxlen=100),
-    "agent_1": deque(maxlen=100),
-    "adversary_0": deque(maxlen=100),
+    "VTM": deque(maxlen=100),
+    "ATM": deque(maxlen=100),
 }
 score_history_dict = {
-    "agent_0": [],
-    "agent_1": [],
-    "adversary_0": [],
+    "VTM": [],
+    "ATM": [],
 }
 rolling_means_dict = {
-    "agent_0": [],
-    "agent_1": [],
-    "adversary_0": [],
+    "VTM": [],
+    "ATM": [],
 }
 for episode in range(episodes):
     env.reset()
     cycles = 0
     episode_score_dict = {
-        "agent_0": 0,
-        "agent_1": 0,
-        "adversary_0": 0,
+        "VTM": 0,
+        "ATM": 0,
     }
     for agent in env.agent_iter():
         agent_obj = agent_dict.get(agent)
-        observation, reward, _, done,  info = env.last()
+        observation, reward, done, info = env.last()
         # Tag observations with the agent index
         if agent_obj.agent_index is not None:
             observation = np.append(observation, [agent_obj.agent_index])
 
         action = agent_obj.policy(observation, done)
-        env.step(action)
+        env.step(action, agent_obj.agent_index)
 
         if agent_obj.last_observation is not None and agent_obj.last_action is not None:
             agent_obj.push_memory(TransitionMemory(agent_obj.last_observation, agent_obj.last_action, reward, observation, done))
